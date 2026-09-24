@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,20 +10,60 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ============================================================================
+// Fan Gallery — DouhaLaribiLive Archive
+// Soporta +10k imágenes con filtros, búsqueda, tags, fuentes múltiples.
+// ============================================================================
+
+model Photo {
+  id          String   @id @default(cuid())
+  // Visual
+  src         String                    // URL o path /uploads/...
+  thumb       String?                   // versión optimizada si existe, si no se usa src
+  width       Int?
+  height      Int?
+  // Metadata
+  title       String?
+  description String?
+  date        DateTime?                 // fecha de la foto (no de subida)
+  location    String?
+  category    String?                   // Retratos, Looks, Live, Behind, Fans, Eventos, Viajes...
+  source      String   @default("local") // local | instagram | telegram | patreon | other
+  sourceUrl   String?                   // link al post original
+  // Stats
+  views       Int      @default(0)
+  pinned      Boolean  @default(false)  // destacado al inicio
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tags TagOnPhoto[]
+
+  @@index([category])
+  @@index([source])
+  @@index([date])
+  @@index([pinned, createdAt])
+  @@index([createdAt])
 }
 
-model Post {
+model Tag {
+  id    String        @id @default(cuid())
+  name  String        @unique
+  photos TagOnPhoto[]
+}
+
+model TagOnPhoto {
+  photoId String
+  tagId   String
+  photo   Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([photoId, tagId])
+  @@index([tagId])
+}
+
+model Admin {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  username  String   @unique
+  password  String                    // bcrypt hash
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }

@@ -1,103 +1,78 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Instagram, Images, Calendar, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Images, Tag, Calendar, Layers } from "lucide-react";
+import type { Stats } from "@/lib/types";
 
-type HeroProps = {
-  totalPhotos: number;
-  categories: number;
-  years: number;
-  events: number;
-};
+export function Hero() {
+  const [stats, setStats] = useState<Stats | null>(null);
 
-export function Hero({ totalPhotos, categories, years, events }: HeroProps) {
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then(setStats)
+      .catch(() => {});
+  }, []);
+
   return (
-    <header className="relative overflow-hidden">
-      {/* Glow background */}
+    <header className="relative overflow-hidden border-b border-border/40">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(60rem 30rem at 70% -10%, oklch(0.78 0.16 75 / 0.20), transparent 60%), radial-gradient(40rem 25rem at 0% 30%, oklch(0.55 0.16 30 / 0.12), transparent 60%)",
+            "radial-gradient(60rem 30rem at 75% -10%, oklch(0.78 0.16 75 / 0.20), transparent 60%), radial-gradient(40rem 25rem at 5% 20%, oklch(0.55 0.16 30 / 0.14), transparent 60%)",
         }}
       />
-
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-14 pb-10 sm:pt-20 sm:pb-14">
+      <div className="relative mx-auto max-w-[1800px] px-4 sm:px-6 lg:px-8 pt-10 pb-8 sm:pt-14 sm:pb-10">
         <motion.div
-          initial={{ opacity: 0, y: 14 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col items-start gap-6"
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col items-start gap-4"
         >
-          {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-200">
-            <Sparkles className="h-3.5 w-3.5" />
-            Fan Page · Galería no oficial
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+            </span>
+            Archivo permanente de fans
           </div>
 
-          {/* Title */}
-          <div className="space-y-3">
-            <h1 className="font-sans text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
-              <span className="text-gold-gradient">Douhal Aribi</span>
-              <br />
+          <div className="space-y-2">
+            <h1 className="font-sans text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
+              <span className="text-gold-gradient">Douha Laribi</span>{" "}
               <span className="text-foreground">Live</span>
             </h1>
-            <p className="max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed">
-              Un archivo visual de los mejores momentos. Explora, busca y
-              redescubre cada foto sin que se pierda entre publicaciones.
-              Hecho por fans, para fans.
+            <p className="max-w-2xl text-sm sm:text-base text-muted-foreground leading-relaxed">
+              Todas las fotos de Douha Laribi (ضحى العريبي), organizadas y
+              listas para redescubrir. Un archivo hecho por fans, para fans,
+              que no depende de ninguna red social.
             </p>
           </div>
 
-          {/* CTAs */}
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href="https://www.instagram.com/douhalaribilive/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-pink-500 via-fuchsia-500 to-amber-400 text-white hover:opacity-90 border-0"
-              >
-                <Instagram className="h-4 w-4 mr-2" />
-                Seguir en Instagram
-              </Button>
-            </a>
-            <a href="#galeria">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-amber-500/40 text-amber-100 hover:bg-amber-500/10 hover:text-amber-50"
-              >
-                Ver la galería
-              </Button>
-            </a>
-          </div>
-
           {/* Stats */}
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl">
-            <StatCard
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full max-w-3xl">
+            <Stat
               icon={<Images className="h-4 w-4" />}
-              value={totalPhotos}
+              value={stats?.total ?? "—"}
               label="Fotos"
             />
-            <StatCard
-              icon={<Sparkles className="h-4 w-4" />}
-              value={categories}
+            <Stat
+              icon={<Layers className="h-4 w-4" />}
+              value={stats?.categories ?? "—"}
               label="Categorías"
             />
-            <StatCard
-              icon={<Calendar className="h-4 w-4" />}
-              value={years}
-              label="Años"
+            <Stat
+              icon={<Tag className="h-4 w-4" />}
+              value={stats?.tags ?? "—"}
+              label="Etiquetas"
             />
-            <StatCard
-              icon={<Sparkles className="h-4 w-4" />}
-              value={events}
-              label="Eventos"
+            <Stat
+              icon={<Calendar className="h-4 w-4" />}
+              value={stats?.years ?? "—"}
+              label="Años"
             />
           </div>
         </motion.div>
@@ -106,24 +81,22 @@ export function Hero({ totalPhotos, categories, years, events }: HeroProps) {
   );
 }
 
-function StatCard({
+function Stat({
   icon,
   value,
   label,
 }: {
   icon: React.ReactNode;
-  value: number;
+  value: number | string;
   label: string;
 }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card/50 backdrop-blur-sm p-3 sm:p-4">
-      <div className="flex items-center gap-1.5 text-amber-300 mb-1">
-        {icon}
-      </div>
-      <div className="text-2xl font-bold text-foreground leading-none">
+    <div className="rounded-xl border border-border/60 bg-card/50 backdrop-blur-sm p-3">
+      <div className="flex items-center gap-1.5 text-amber-300 mb-1">{icon}</div>
+      <div className="text-xl sm:text-2xl font-bold text-foreground leading-none tabular-nums">
         {value}
       </div>
-      <div className="text-xs text-muted-foreground mt-1">{label}</div>
+      <div className="text-[11px] text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }

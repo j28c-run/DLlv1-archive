@@ -14,30 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Douhal Aribi Live · Fan Gallery",
+  title: "DouhaLaribiLive · Archivo de Fans",
   description:
-    "Galería no oficial dedicada a Douhal Aribi. Explora, busca y redescubre los mejores momentos en un solo lugar.",
+    "Archivo visual permanente de Douha Laribi (ضحى العريبي). Todas las fotos en un solo lugar, organizadas, buscables y listas para redescubrir.",
   keywords: [
-    "Douhal Aribi",
-    "Douhal Aribi Live",
+    "Douha Laribi",
+    "DouhaLaribiLive",
+    "ضحى العريبي",
     "fan page",
+    "archivo",
     "galería",
-    "fotos",
-    "Instagram",
   ],
-  authors: [{ name: "Fan Page Douhal Aribi Live" }],
+  authors: [{ name: "Fan Archive DouhaLaribiLive" }],
   openGraph: {
-    title: "Douhal Aribi Live · Fan Gallery",
+    title: "DouhaLaribiLive · Archivo de Fans",
     description:
-      "Todas las imágenes de Douhal Aribi organizadas, buscables y listas para redescubrir.",
-    siteName: "Douhal Aribi Live",
+      "Archivo visual permanente de Douha Laribi. Todas las fotos organizadas en un solo lugar.",
+    siteName: "DouhaLaribiLive Archive",
     type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Douhal Aribi Live · Fan Gallery",
-    description:
-      "Todas las imágenes de Douhal Aribi organizadas, buscables y listas para redescubrir.",
   },
 };
 
