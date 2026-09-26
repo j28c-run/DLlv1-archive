@@ -33,7 +33,7 @@ const fmtDate = (iso?: string | null) => {
 
 // Descripción predefinida solo para el PRIMER slide (el resto usan info de la foto real)
 const HERO_FIRST_DESCRIPTION =
-  "Todas las fotos de Douha Laribi (ضحى العريبي), organizadas y listas para redescubrir. Un archivo hecho por fans, para fans, que no depende de ninguna red social.";
+  "Todas las fotos de Douha Laribi (ضحى العريبي), organizadas y listas para redescubrir.";
 
 export function Hero() {
   const [photos, setPhotos] = useState<Photo[]>([]);
