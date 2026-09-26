@@ -12,8 +12,9 @@ import {
   Pause,
   Play,
   Pin,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Photo } from "@/lib/types";
 
@@ -30,7 +31,6 @@ const fmtDate = (iso?: string | null) => {
   }
 };
 
-// Descripciones rotativas para el badge principal (cuando no hay foto o como subtítulo genérico)
 const HERO_SUBTITLES = [
   "Todas las fotos de Douha Laribi (ضحى العريبي), organizadas y listas para redescubrir. Un archivo hecho por fans, para fans, que no depende de ninguna red social.",
   "Recopilación permanente de momentos: lives, looks, retratos y behind the scenes. Todo en un solo lugar.",
@@ -43,8 +43,8 @@ export function Hero() {
   const [direction, setDirection] = useState(1);
   const [playing, setPlaying] = useState(true);
   const [loaded, setLoaded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
-  // Cargar fotos del slider
   useEffect(() => {
     fetch("/api/photos/slider?limit=8")
       .then((r) => r.json())
@@ -69,21 +69,27 @@ export function Hero() {
     setIndex((i) => (i >= total - 1 ? 0 : i + 1));
   }, [total]);
 
-  // Autoplay
   useEffect(() => {
     if (!playing || total <= 1) return;
     const t = setInterval(goNext, 5000);
     return () => clearInterval(t);
   }, [playing, total, goNext]);
 
-  // Reset index si la lista cambia
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIndex(0);
   }, [photos.length]);
 
+  // En modo compacto: menos info. En modo ampliado: más info y controles completos.
+  // Alturas: compacto = 200/220/240; ampliado = 420/480/520 (lo que teníamos antes)
+  const heightClass = expanded
+    ? "h-[420px] sm:h-[480px] lg:h-[520px]"
+    : "h-[200px] sm:h-[240px] lg:h-[260px]";
+
   return (
-    <header className="relative overflow-hidden border-b border-border/40 h-[420px] sm:h-[480px] lg:h-[520px]">
+    <header
+      className={`relative overflow-hidden border-b border-border/40 transition-[height] duration-500 ease-out ${heightClass}`}
+    >
       {/* Background images slider */}
       {total > 0 ? (
         <AnimatePresence initial={false} mode="popLayout" custom={direction}>
@@ -113,7 +119,6 @@ export function Hero() {
           </motion.div>
         </AnimatePresence>
       ) : (
-        // Fondo gradient si no hay fotos
         <div
           aria-hidden
           className="absolute inset-0"
@@ -125,7 +130,7 @@ export function Hero() {
       )}
 
       {/* Contenido */}
-      <div className="relative h-full mx-auto max-w-[1800px] px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-8 sm:pb-10">
+      <div className="relative h-full mx-auto max-w-[1800px] px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-4 sm:pb-5">
         <AnimatePresence mode="wait">
           <motion.div
             key={index}
@@ -133,7 +138,7 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="flex flex-col items-start gap-3 max-w-3xl"
+            className="flex flex-col items-start gap-2 sm:gap-3 max-w-3xl"
           >
             {/* Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-amber-200">
@@ -145,19 +150,31 @@ export function Hero() {
             </div>
 
             {/* Título */}
-            <h1 className="font-sans text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.02] drop-shadow-lg">
+            <h1 className="font-sans text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.02] drop-shadow-lg">
               <span className="text-gold-gradient">Douha Laribi</span>{" "}
               <span className="text-foreground">Live</span>
             </h1>
 
-            {/* Subtítulo */}
-            <p className="max-w-2xl text-sm sm:text-base lg:text-lg text-foreground/90 leading-relaxed drop-shadow">
-              {currentSubtitle}
-            </p>
+            {/* Subtítulo (solo en modo ampliado para no saturar el compacto) */}
+            {expanded && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="max-w-2xl text-sm sm:text-base lg:text-lg text-foreground/90 leading-relaxed drop-shadow"
+              >
+                {currentSubtitle}
+              </motion.p>
+            )}
 
-            {/* Info de la foto actual del slide */}
-            {current && (
-              <div className="flex flex-wrap items-center gap-2 mt-2">
+            {/* Info de la foto actual (solo en modo ampliado) */}
+            {expanded && current && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-wrap items-center gap-2 mt-1"
+              >
                 {current.category && (
                   <Badge className="bg-amber-500/85 text-amber-950 border-0 backdrop-blur">
                     {current.category}
@@ -189,51 +206,67 @@ export function Hero() {
                     Ver esta foto →
                   </Link>
                 )}
-              </div>
+              </motion.div>
             )}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Controles del slider */}
+      {/* Controles del slider (siempre visibles, pero más compactos cuando no está expandido) */}
       {total > 1 && (
         <>
           {/* Botón anterior */}
-          <button
-            type="button"
-            onClick={goPrev}
-            aria-label="Anterior"
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-background/40 backdrop-blur-md border border-border/60 text-foreground hover:bg-background/70 hover:border-amber-500/40 transition-colors flex items-center justify-center"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
+          {expanded && (
+            <button
+              type="button"
+              onClick={goPrev}
+              aria-label="Anterior"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-background/40 backdrop-blur-md border border-border/60 text-foreground hover:bg-background/70 hover:border-amber-500/40 transition-colors flex items-center justify-center"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
 
           {/* Botón siguiente */}
-          <button
-            type="button"
-            onClick={goNext}
-            aria-label="Siguiente"
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-background/40 backdrop-blur-md border border-border/60 text-foreground hover:bg-background/70 hover:border-amber-500/40 transition-colors flex items-center justify-center"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+          {expanded && (
+            <button
+              type="button"
+              onClick={goNext}
+              aria-label="Siguiente"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-background/40 backdrop-blur-md border border-border/60 text-foreground hover:bg-background/70 hover:border-amber-500/40 transition-colors flex items-center justify-center"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          )}
 
-          {/* Botón play/pausa */}
+          {/* Botón play/pausa (solo en expandido) */}
+          {expanded && (
+            <button
+              type="button"
+              onClick={() => setPlaying((p) => !p)}
+              aria-label={playing ? "Pausar" : "Reproducir"}
+              className="absolute right-3 bottom-3 sm:bottom-4 z-10 h-9 w-9 rounded-full bg-background/40 backdrop-blur-md border border-border/60 text-foreground hover:bg-background/70 transition-colors flex items-center justify-center"
+            >
+              {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </button>
+          )}
+
+          {/* Botón expandir/contraer (siempre visible, arriba a la derecha) */}
           <button
             type="button"
-            onClick={() => setPlaying((p) => !p)}
-            aria-label={playing ? "Pausar" : "Reproducir"}
-            className="absolute right-3 bottom-3 sm:bottom-4 z-10 h-9 w-9 rounded-full bg-background/40 backdrop-blur-md border border-border/60 text-foreground hover:bg-background/70 transition-colors flex items-center justify-center"
+            onClick={() => setExpanded((e) => !e)}
+            aria-label={expanded ? "Contraer slider" : "Ampliar slider"}
+            className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full bg-background/40 backdrop-blur-md border border-border/60 text-foreground hover:bg-background/70 hover:border-amber-500/40 transition-colors flex items-center justify-center"
           >
-            {playing ? (
-              <Pause className="h-4 w-4" />
+            {expanded ? (
+              <Minimize2 className="h-4 w-4" />
             ) : (
-              <Play className="h-4 w-4" />
+              <Maximize2 className="h-4 w-4" />
             )}
           </button>
 
           {/* Indicadores (dots) */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
             {photos.map((p, i) => (
               <button
                 key={p.id}
@@ -245,21 +278,24 @@ export function Hero() {
                 aria-label={`Ir a foto ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all ${
                   i === index
-                    ? "w-8 bg-amber-400"
+                    ? expanded
+                      ? "w-8 bg-amber-400"
+                      : "w-6 bg-amber-400"
                     : "w-1.5 bg-foreground/40 hover:bg-foreground/60"
                 }`}
               />
             ))}
           </div>
 
-          {/* Contador */}
-          <div className="absolute left-3 bottom-3 sm:bottom-4 z-10 text-xs text-foreground/70 backdrop-blur bg-background/40 px-2 py-1 rounded-full tabular-nums">
-            {index + 1} / {total}
-          </div>
+          {/* Contador (solo en expandido) */}
+          {expanded && (
+            <div className="absolute left-3 bottom-3 sm:bottom-4 z-10 text-xs text-foreground/70 backdrop-blur bg-background/40 px-2 py-1 rounded-full tabular-nums">
+              {index + 1} / {total}
+            </div>
+          )}
         </>
       )}
 
-      {/* Loading shimmer */}
       {!loaded && (
         <div className="absolute inset-0 bg-muted/30 animate-pulse" />
       )}
