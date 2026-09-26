@@ -116,17 +116,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
         <ScrollArea className="h-full">
           <nav className="p-3 pt-4 space-y-1">
-            <SectionTitle>Inicio</SectionTitle>
+            <SectionTitle icon={<Home className="h-3.5 w-3.5" />}>Inicio</SectionTitle>
             <Item href="/" icon={<Home className="h-4 w-4" />} label="Galería" active={pathname === "/"} />
             <Item href="/?sort=popular" icon={<Sparkles className="h-4 w-4" />} label="Más vistas" />
             <Item href="/?pinned=true" icon={<Pin className="h-4 w-4" />} label="Destacadas" />
             <Item href="/?sort=oldest" icon={<Shuffle className="h-4 w-4" />} label="Más antiguas" />
 
-            <SectionTitle className="mt-4">
-              <span className="flex items-center gap-1.5">
-                <FolderOpen className="h-3.5 w-3.5" />
-                Colecciones
-              </span>
+            <SectionTitle icon={<FolderOpen className="h-3.5 w-3.5" />} className="mt-4">
+              Colecciones
             </SectionTitle>
             {collections.length === 0 ? (
               <p className="px-3 text-xs text-muted-foreground/70 py-1">
@@ -146,11 +143,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <Item href="/collections" icon={<Layers className="h-4 w-4" />} label="Ver todas" muted />
 
             <Collapsible open={catsOpen} onOpenChange={setCatsOpen}>
-              <SectionTitle className="mt-4">
+              <SectionTitle icon={<ImageIcon className="h-3.5 w-3.5" />} className="mt-4">
                 <CollapsibleTrigger asChild>
                   <button className="flex items-center gap-1 w-full text-left">
-                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !catsOpen && "-rotate-90")} />
-                    Categorías
+                    <span className="flex-1">Categorías</span>
+                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform opacity-70", !catsOpen && "-rotate-90")} />
                   </button>
                 </CollapsibleTrigger>
               </SectionTitle>
@@ -170,11 +167,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
             {timeline && timeline.years.length > 0 && (
               <Collapsible open={yearsOpen} onOpenChange={setYearsOpen}>
-                <SectionTitle className="mt-4">
+                <SectionTitle icon={<Calendar className="h-3.5 w-3.5" />} className="mt-4">
                   <CollapsibleTrigger asChild>
                     <button className="flex items-center gap-1 w-full text-left">
-                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !yearsOpen && "-rotate-90")} />
-                      Por año
+                      <span className="flex-1">Por año</span>
+                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform opacity-70", !yearsOpen && "-rotate-90")} />
                     </button>
                   </CollapsibleTrigger>
                 </SectionTitle>
@@ -195,11 +192,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             )}
 
             <Collapsible open={tagsOpen} onOpenChange={setTagsOpen}>
-              <SectionTitle className="mt-4">
+              <SectionTitle icon={<TagIcon className="h-3.5 w-3.5" />} className="mt-4">
                 <CollapsibleTrigger asChild>
                   <button className="flex items-center gap-1 w-full text-left">
-                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !tagsOpen && "-rotate-90")} />
-                    Etiquetas populares
+                    <span className="flex-1">Etiquetas populares</span>
+                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform opacity-70", !tagsOpen && "-rotate-90")} />
                   </button>
                 </CollapsibleTrigger>
               </SectionTitle>
@@ -223,10 +220,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               </CollapsibleContent>
             </Collapsible>
 
-            <SectionTitle className="mt-4">Herramientas</SectionTitle>
+            <SectionTitle icon={<Search className="h-3.5 w-3.5" />} className="mt-4">Herramientas</SectionTitle>
             <Item href="/search" icon={<Search className="h-4 w-4" />} label="Búsqueda avanzada" active={pathname === "/search"} />
 
-            <SectionTitle className="mt-4">Redes oficiales</SectionTitle>
+            <SectionTitle icon={<Heart className="h-3.5 w-3.5 text-pink-500" />} className="mt-4">Redes oficiales</SectionTitle>
             <a
               href="https://www.instagram.com/douhalaribilive/"
               target="_blank"
@@ -251,7 +248,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
             {isAdmin && (
               <>
-                <SectionTitle className="mt-4">Administración</SectionTitle>
+                <SectionTitle icon={<Settings className="h-3.5 w-3.5" />} className="mt-4">Administración</SectionTitle>
                 <Item href="/admin" icon={<Settings className="h-4 w-4" />} label="Panel admin" active={pathname.startsWith("/admin")} />
               </>
             )}
@@ -277,13 +274,16 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 function SectionTitle({
   children,
   className,
+  icon,
 }: {
   children: React.ReactNode;
   className?: string;
+  icon?: React.ReactNode;
 }) {
   return (
-    <div className={cn("px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold", className)}>
-      {children}
+    <div className={cn("px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold flex items-center gap-1.5", className)}>
+      {icon && <span className="text-amber-300/80">{icon}</span>}
+      <span className="flex-1">{children}</span>
     </div>
   );
 }

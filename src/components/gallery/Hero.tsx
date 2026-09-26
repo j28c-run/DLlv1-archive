@@ -1,20 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Images, Tag, Calendar, Layers } from "lucide-react";
-import type { Stats } from "@/lib/types";
 
 export function Hero() {
-  const [stats, setStats] = useState<Stats | null>(null);
-
-  useEffect(() => {
-    fetch("/api/stats")
-      .then((r) => r.json())
-      .then(setStats)
-      .catch(() => {});
-  }, []);
-
   return (
     <header className="relative overflow-hidden border-b border-border/40">
       <div
@@ -51,52 +39,8 @@ export function Hero() {
               que no depende de ninguna red social.
             </p>
           </div>
-
-          {/* Stats */}
-          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full max-w-3xl">
-            <Stat
-              icon={<Images className="h-4 w-4" />}
-              value={stats?.total ?? "—"}
-              label="Fotos"
-            />
-            <Stat
-              icon={<Layers className="h-4 w-4" />}
-              value={stats?.categories ?? "—"}
-              label="Categorías"
-            />
-            <Stat
-              icon={<Tag className="h-4 w-4" />}
-              value={stats?.tags ?? "—"}
-              label="Etiquetas"
-            />
-            <Stat
-              icon={<Calendar className="h-4 w-4" />}
-              value={stats?.years ?? "—"}
-              label="Años"
-            />
-          </div>
         </motion.div>
       </div>
     </header>
-  );
-}
-
-function Stat({
-  icon,
-  value,
-  label,
-}: {
-  icon: React.ReactNode;
-  value: number | string;
-  label: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border/60 bg-card/50 backdrop-blur-sm p-3">
-      <div className="flex items-center gap-1.5 text-amber-300 mb-1">{icon}</div>
-      <div className="text-xl sm:text-2xl font-bold text-foreground leading-none tabular-nums">
-        {value}
-      </div>
-      <div className="text-[11px] text-muted-foreground mt-1">{label}</div>
-    </div>
   );
 }
