@@ -31,11 +31,9 @@ const fmtDate = (iso?: string | null) => {
   }
 };
 
-const HERO_SUBTITLES = [
-  "Todas las fotos de Douha Laribi (ضحى العريبي), organizadas y listas para redescubrir. Un archivo hecho por fans, para fans, que no depende de ninguna red social.",
-  "Recopilación permanente de momentos: lives, looks, retratos y behind the scenes. Todo en un solo lugar.",
-  "Explora el archivo visual completo, sin algoritmos ni feed infinito. Busca, encuentra y redescubre.",
-];
+// Descripción principal fija del hero (no varía con el slide)
+const HERO_DESCRIPTION =
+  "Todas las fotos de Douha Laribi (ضحى العريبي), organizadas y listas para redescubrir. Un archivo hecho por fans, para fans, que no depende de ninguna red social.";
 
 export function Hero() {
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -57,7 +55,6 @@ export function Hero() {
 
   const total = photos.length;
   const current = photos[index];
-  const currentSubtitle = HERO_SUBTITLES[index % HERO_SUBTITLES.length];
 
   const goPrev = useCallback(() => {
     setDirection(-1);
@@ -155,19 +152,16 @@ export function Hero() {
               <span className="text-foreground">Live</span>
             </h1>
 
-            {/* Subtítulo (siempre visible, pero más pequeño en compacto) */}
-            <motion.p
-              key={`subtitle-${expanded ? "expanded" : "compact"}-${index}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+            {/* Subtítulo fijo (siempre el mismo, sin importar el slide) */}
+            <p
               className={
                 expanded
                   ? "max-w-2xl text-sm sm:text-base lg:text-lg text-foreground/90 leading-relaxed drop-shadow"
                   : "max-w-2xl text-xs sm:text-sm text-foreground/80 leading-snug drop-shadow line-clamp-2"
               }
             >
-              {currentSubtitle}
-            </motion.p>
+              {HERO_DESCRIPTION}
+            </p>
 
             {/* Info de la foto actual (solo en modo ampliado) */}
             {expanded && current && (
