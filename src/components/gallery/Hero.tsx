@@ -31,8 +31,8 @@ const fmtDate = (iso?: string | null) => {
   }
 };
 
-// Descripción principal fija del hero (no varía con el slide)
-const HERO_DESCRIPTION =
+// Descripción predefinida solo para el PRIMER slide (el resto usan info de la foto real)
+const HERO_FIRST_DESCRIPTION =
   "Todas las fotos de Douha Laribi (ضحى العريبي), organizadas y listas para redescubrir. Un archivo hecho por fans, para fans, que no depende de ninguna red social.";
 
 export function Hero() {
@@ -152,16 +152,34 @@ export function Hero() {
               <span className="text-foreground">Live</span>
             </h1>
 
-            {/* Subtítulo fijo (siempre el mismo, sin importar el slide) */}
-            <p
-              className={
-                expanded
-                  ? "max-w-2xl text-sm sm:text-base lg:text-lg text-foreground/90 leading-relaxed drop-shadow"
-                  : "max-w-2xl text-xs sm:text-sm text-foreground/80 leading-snug drop-shadow line-clamp-2"
-              }
-            >
-              {HERO_DESCRIPTION}
-            </p>
+            {/* Subtítulo:
+                - En el slide 0 (primera foto): descripción predefinida
+                - En los demás slides: descripción real de la foto (o título si no tiene descripción)
+                - Si la foto no tiene ni título ni descripción: no se muestra nada */}
+            {(() => {
+              const subtitle =
+                index === 0
+                  ? HERO_FIRST_DESCRIPTION
+                  : current?.description?.trim()
+                    ? current.description
+                    : current?.title?.trim()
+                      ? current.title
+                      : null;
+
+              if (!subtitle) return null;
+
+              return (
+                <p
+                  className={
+                    expanded
+                      ? "max-w-2xl text-sm sm:text-base lg:text-lg text-foreground/90 leading-relaxed drop-shadow"
+                      : "max-w-2xl text-xs sm:text-sm text-foreground/80 leading-snug drop-shadow line-clamp-2"
+                  }
+                >
+                  {subtitle}
+                </p>
+              );
+            })()}
 
             {/* Info de la foto actual (solo en modo ampliado) */}
             {expanded && current && (
