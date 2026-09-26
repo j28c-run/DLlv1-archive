@@ -155,17 +155,19 @@ export function Hero() {
               <span className="text-foreground">Live</span>
             </h1>
 
-            {/* Subtítulo (solo en modo ampliado para no saturar el compacto) */}
-            {expanded && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="max-w-2xl text-sm sm:text-base lg:text-lg text-foreground/90 leading-relaxed drop-shadow"
-              >
-                {currentSubtitle}
-              </motion.p>
-            )}
+            {/* Subtítulo (siempre visible, pero más pequeño en compacto) */}
+            <motion.p
+              key={`subtitle-${expanded ? "expanded" : "compact"}-${index}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className={
+                expanded
+                  ? "max-w-2xl text-sm sm:text-base lg:text-lg text-foreground/90 leading-relaxed drop-shadow"
+                  : "max-w-2xl text-xs sm:text-sm text-foreground/80 leading-snug drop-shadow line-clamp-2"
+              }
+            >
+              {currentSubtitle}
+            </motion.p>
 
             {/* Info de la foto actual (solo en modo ampliado) */}
             {expanded && current && (
