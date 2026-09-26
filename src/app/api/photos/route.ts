@@ -1,29 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
 
-// GET /api/photos — paginación cursor-based, filtros, búsqueda
-// Query params:
-//   limit (default 24, max 60)
-//   cursor (cuid del último item, opcional)
-//   q (búsqueda texto en title/description/location)
-//   category (categoría exacta)
-//   source (instagram | telegram | patreon | local | other)
-//   year (yyyy)
-//   tag (nombre exacto del tag)
-//   sort (recent | oldest | popular)
-
+// GET /api/photos — paginación cursor-based + búsqueda avanzada combinada
+// Params: limit, cursor, q, category, source, year, tag (multi-coma), tagMode (any|all), sort, pinned
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const limit = Math.min(Number(searchParams.get('limit') || 24), 60)
-  const cursor = searchParams.get('cursor') || undefined
-  const q = searchParams.get('q')?.trim() || undefined
-  const category = searchParams.get('category') || undefined
-  const source = searchParams.get('source') || undefined
-  const year = searchParams.get('year') || undefined
-  const tag = searchParams.get('tag') || undefined
-  const sort = searchParams.get('sort') || 'recent'
+  const { searchParams } = new URL(req.url);
+  const limit = Math.min(Number(searchParams.get("limit") || 30), 60);
+  const cursor = searchParams.get("cursor") || undefined;
+  const q = searchParams.get("q")?.trim() || undefined;
+  const category = searchParams.get("category") || undefined;
+  const source = searchParams.get("source") || undefined;
+  const year = searchParams.get("year") || undefined;
+  const tagParam = searchParams.get("tag") || undefined;
+  const tagMode = (searchParams.get("tagMode") || "any") as "any" | "all";
+  const sort = searchParams.get("sort") || "recent";
+  const pinnedParam = searchParams.get("pinned");
 
-  const where: any = { AND: [] }
+  const tags = tagParam
+    ? tagParam
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+
+  const where: any = { AND: [] };
   if (q) {
     where.AND.push({
       OR: [
@@ -31,27 +31,43 @@ export async function GET(req: NextRequest) {
         { description: { contains: q } },
         { location: { contains: q } },
       ],
-    })
+    });
   }
-  if (category && category !== 'Todas') where.AND.push({ category })
-  if (source && source !== 'Todas') where.AND.push({ source })
-  if (year && year !== 'Todos') {
-    const start = new Date(`${year}-01-01T00:00:00Z`)
-    const end = new Date(`${Number(year) + 1}-01-01T00:00:00Z`)
-    where.AND.push({ date: { gte: start, lt: end } })
+  if (category && category !== "Todas") where.AND.push({ category });
+  if (source && source !== "Todas") where.AND.push({ source });
+  if (year && year !== "Todos") {
+    const start = new Date(`${year}-01-01T00:00:00Z`);
+    const end = new Date(`${Number(year) + 1}-01-01T00:00:00Z`);
+    where.AND.push({ date: { gte: start, lt: end } });
   }
-  if (tag) {
-    where.AND.push({ tags: { some: { tag: { name: tag } } } })
+  if (tags.length > 0) {
+    if (tagMode === "all") {
+      where.AND.push(
+        ...tags.map((name) => ({
+          tags: { some: { tag: { name } } },
+        })),
+      );
+    } else {
+      where.AND.push({
+        tags: { some: { tag: { name: { in: tags } } } },
+      });
+    }
   }
-  if (where.AND.length === 0) delete where.AND
+  if (pinnedParam === "true") where.AND.push({ pinned: true });
+  if (pinnedParam === "false") where.AND.push({ pinned: false });
+  if (where.AND.length === 0) delete where.AND;
 
-  let orderBy: any[]
-  if (sort === 'popular') {
-    orderBy = [{ pinned: 'desc' }, { views: 'desc' }, { createdAt: 'desc' }]
-  } else if (sort === 'oldest') {
-    orderBy = [{ pinned: 'desc' }, { date: { sort: 'asc', nulls: 'last' as const } }, { createdAt: 'asc' }]
+  let orderBy: any[];
+  if (sort === "popular") {
+    orderBy = [{ pinned: "desc" }, { views: "desc" }, { createdAt: "desc" }];
+  } else if (sort === "oldest") {
+    orderBy = [
+      { pinned: "desc" },
+      { date: { sort: "asc", nulls: "last" as const } },
+      { createdAt: "asc" },
+    ];
   } else {
-    orderBy = [{ pinned: 'desc' }, { createdAt: 'desc' }]
+    orderBy = [{ pinned: "desc" }, { createdAt: "desc" }];
   }
 
   const photos = await db.photo.findMany({
@@ -60,11 +76,12 @@ export async function GET(req: NextRequest) {
     take: limit + 1,
     ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     include: { tags: { include: { tag: true } } },
-  })
+  });
 
-  const hasMore = photos.length > limit
-  const items = hasMore ? photos.slice(0, limit) : photos
-  const nextCursor = hasMore ? items[items.length - 1].id : null
+  const hasMore = photos.length > limit;
+  const items = hasMore ? photos.slice(0, limit) : photos;
+  const nextCursor = hasMore ? items[items.length - 1].id : null;
+  const total = await db.photo.count({ where });
 
   return NextResponse.json({
     items: items.map((p) => ({
@@ -86,5 +103,6 @@ export async function GET(req: NextRequest) {
     })),
     nextCursor,
     hasMore,
-  })
+    total,
+  });
 }

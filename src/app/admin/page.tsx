@@ -13,6 +13,9 @@ import {
   ExternalLink,
   Eye,
   Calendar,
+  Sparkles,
+  Layers,
+  Upload,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -36,6 +39,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Navbar } from "@/components/gallery/Navbar";
+import { Sidebar } from "@/components/gallery/Sidebar";
+import { BulkUpload } from "@/components/admin/BulkUpload";
 import type { Filters, Photo } from "@/lib/types";
 import { SOURCE_LABELS } from "@/lib/types";
 
@@ -90,9 +95,11 @@ export default function AdminPage() {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("Todas");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [editing, setEditing] = useState<EditState>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
   // Auth check
   useEffect(() => {
@@ -191,6 +198,7 @@ export default function AdminPage() {
           .map((t) => t.trim().toLowerCase())
           .filter(Boolean),
         pinned: editing.pinned,
+        autoAnalyze: false, // en edición manual, no re-analizar
       };
       const url = editing.id
         ? `/api/photos/${editing.id}`
@@ -229,11 +237,32 @@ export default function AdminPage() {
     loadPhotos();
   };
 
+  const analyze = async (p: Photo) => {
+    setAnalyzingId(p.id);
+    try {
+      const res = await fetch(`/api/photos/${p.id}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ override: true }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "Error al analizar");
+      }
+      loadPhotos();
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
+
   if (!authChecked) {
     return (
       <main className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
+        <Sidebar open={false} onClose={() => {}} />
+        <div className="lg:pl-72 flex-1 flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       </main>
@@ -243,6 +272,8 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen flex flex-col">
       <Navbar />
+      <Sidebar open={false} onClose={() => {}} />
+      <div className="lg:pl-72">
       <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-4 lg:px-6 py-6">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
@@ -254,10 +285,17 @@ export default function AdminPage() {
               Sube, edita y organiza las fotos del archivo
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={openNew} className="bg-amber-500 text-amber-950 hover:bg-amber-400 border-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              onClick={() => setBulkOpen(true)}
+              className="bg-gradient-to-r from-amber-500 to-pink-500 text-white hover:opacity-90 border-0"
+            >
+              <Upload className="h-4 w-4 mr-1.5" />
+              Subida masiva
+            </Button>
+            <Button onClick={openNew} variant="outline" className="border-amber-500/40 text-amber-100 hover:bg-amber-500/10">
               <Plus className="h-4 w-4 mr-1.5" />
-              Subir foto
+              Foto única
             </Button>
             <Button variant="outline" onClick={logout}>
               <LogOut className="h-4 w-4 mr-1.5" />
@@ -345,6 +383,20 @@ export default function AdminPage() {
                       size="icon"
                       variant="secondary"
                       className="h-7 w-7 bg-background/80 backdrop-blur"
+                      onClick={() => analyze(p)}
+                      title="Re-analizar con IA"
+                      disabled={analyzingId === p.id}
+                    >
+                      {analyzingId === p.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3 text-amber-400" />
+                      )}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="h-7 w-7 bg-background/80 backdrop-blur"
                       onClick={() => togglePin(p)}
                       title={p.pinned ? "Desfijar" : "Fijar"}
                     >
@@ -399,12 +451,13 @@ export default function AdminPage() {
 
         {photos.length === 0 && !loading && (
           <div className="text-center py-20 text-muted-foreground text-sm">
-            No hay fotos todavía. Haz clic en "Subir foto" para empezar.
+            No hay fotos todavía. Haz clic en "Subida masiva" para empezar.
           </div>
         )}
       </div>
+      </div>
 
-      {/* Dialog for new/edit */}
+      {/* Dialog: foto única */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -603,6 +656,16 @@ export default function AdminPage() {
               {editing.id ? "Guardar cambios" : "Subir foto"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: subida masiva */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Subida masiva de fotos</DialogTitle>
+          </DialogHeader>
+          <BulkUpload filters={filters} onDone={loadPhotos} />
         </DialogContent>
       </Dialog>
     </main>

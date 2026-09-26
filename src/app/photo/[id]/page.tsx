@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/gallery/Navbar";
+import { Sidebar } from "@/components/gallery/Sidebar";
 import { SOURCE_LABELS, type PhotoDetail } from "@/lib/types";
 
 const fmtDate = (iso?: string | null) => {
@@ -72,7 +73,8 @@ export default function PhotoPage() {
     return (
       <main className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
+        <Sidebar open={false} onClose={() => {}} />
+        <div className="lg:pl-72 flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </main>
@@ -83,7 +85,8 @@ export default function PhotoPage() {
     return (
       <main className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+        <Sidebar open={false} onClose={() => {}} />
+        <div className="lg:pl-72 flex-1 flex flex-col items-center justify-center gap-3">
           <p className="text-muted-foreground">No se encontró la foto.</p>
           <Link href="/">
             <Button>Volver a la galería</Button>
@@ -96,6 +99,8 @@ export default function PhotoPage() {
   return (
     <main className="min-h-screen flex flex-col">
       <Navbar />
+      <Sidebar open={false} onClose={() => {}} />
+      <div className="lg:pl-72">
       <div className="mx-auto w-full max-w-[1800px] px-3 sm:px-4 lg:px-6 py-4">
         <Button
           variant="ghost"
@@ -240,6 +245,7 @@ export default function PhotoPage() {
             </div>
           </section>
         )}
+      </div>
       </div>
     </main>
   );

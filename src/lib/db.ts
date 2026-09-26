@@ -1,13 +1,7 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
+// Cache en variable propia (no globalThis) para evitar problemas cuando
+// se actualiza el schema y el dev server mantiene el cliente viejo.
+let prismaInstance: PrismaClient | null = null;
 
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ['query'],
-  })
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+export const db: PrismaClient = prismaInstance ?? (prismaInstance = new PrismaClient({ log: ["query"] }));

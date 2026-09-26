@@ -10,33 +10,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================================
-// Fan Gallery — DouhaLaribiLive Archive
-// Soporta +10k imágenes con filtros, búsqueda, tags, fuentes múltiples.
-// ============================================================================
-
 model Photo {
   id          String   @id @default(cuid())
-  // Visual
-  src         String                    // URL o path /uploads/...
-  thumb       String?                   // versión optimizada si existe, si no se usa src
+  src         String
+  thumb       String?
   width       Int?
   height      Int?
-  // Metadata
   title       String?
   description String?
-  date        DateTime?                 // fecha de la foto (no de subida)
+  date        DateTime?
   location    String?
-  category    String?                   // Retratos, Looks, Live, Behind, Fans, Eventos, Viajes...
-  source      String   @default("local") // local | instagram | telegram | patreon | other
-  sourceUrl   String?                   // link al post original
-  // Stats
+  category    String?
+  source      String   @default("local")
+  sourceUrl   String?
   views       Int      @default(0)
-  pinned      Boolean  @default(false)  // destacado al inicio
+  pinned      Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   tags TagOnPhoto[]
+
+  // Referencias inversas
+  collectionCovers Collection[]      @relation("CollectionCover")
+  inCollections    CollectionPhoto[]
 
   @@index([category])
   @@index([source])
@@ -46,8 +42,8 @@ model Photo {
 }
 
 model Tag {
-  id    String        @id @default(cuid())
-  name  String        @unique
+  id     String        @id @default(cuid())
+  name   String        @unique
   photos TagOnPhoto[]
 }
 
@@ -64,6 +60,31 @@ model TagOnPhoto {
 model Admin {
   id        String   @id @default(cuid())
   username  String   @unique
-  password  String                    // bcrypt hash
+  password  String
   createdAt DateTime @default(now())
+}
+
+// Tableros / colecciones estilo Pinterest
+model Collection {
+  id           String             @id @default(cuid())
+  name         String
+  description  String?
+  coverPhotoId String?
+  coverPhoto   Photo?             @relation("CollectionCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
+  photos       CollectionPhoto[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([createdAt])
+}
+
+model CollectionPhoto {
+  collectionId String
+  photoId      String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  photo        Photo      @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  addedAt      DateTime   @default(now())
+
+  @@id([collectionId, photoId])
+  @@index([photoId])
 }
