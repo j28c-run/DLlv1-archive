@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, FolderOpen, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, FolderOpen, Trash2, Download } from "lucide-react";
 import { Navbar } from "@/components/gallery/Navbar";
 import { Sidebar } from "@/components/gallery/Sidebar";
 import { PhotoCard } from "@/components/gallery/PhotoCard";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import type { Photo } from "@/lib/types";
 
 type CollectionDetail = {
@@ -21,8 +22,10 @@ type CollectionDetail = {
 export default function CollectionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { toast } = useToast();
   const [col, setCol] = useState<CollectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [zipping, setZipping] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -35,6 +38,41 @@ export default function CollectionDetailPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
+
+  const downloadAll = async () => {
+    if (!col || col.photos.length === 0) return;
+    setZipping(true);
+    try {
+      const res = await fetch(`/api/collections/${id}/download`);
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "Error al generar el ZIP");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const cd = res.headers.get("content-disposition") || "";
+      const m = cd.match(/filename="([^"]+)"/);
+      a.download = m?.[1] || "coleccion.zip";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({
+        title: "Descarga iniciada",
+        description: `${col.photos.length} fotos en el ZIP`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Error al descargar",
+        description: e.message,
+        variant: "destructive",
+      });
+    } finally {
+      setZipping(false);
+    }
+  };
 
   const removeCollection = async () => {
     if (!confirm(`¿Eliminar la colección "${col?.name}"? Las fotos no se borrarán.`)) return;
@@ -74,10 +112,26 @@ export default function CollectionDetailPage() {
                   )}
                   <p className="text-xs text-muted-foreground mt-2">{col.photos.length} foto(s)</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={removeCollection} className="text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4 mr-1.5" />
-                  Eliminar
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={downloadAll}
+                    disabled={zipping || col.photos.length === 0}
+                    className="bg-amber-500 text-amber-950 hover:bg-amber-400 border-0"
+                  >
+                    {zipping ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-1.5" />
+                    )}
+                    {zipping ? "Generando ZIP…" : "Descargar todo (ZIP)"}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={removeCollection} className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-1.5" />
+                    Eliminar
+                  </Button>
+                </div>
               </div>
 
               {col.photos.length === 0 ? (

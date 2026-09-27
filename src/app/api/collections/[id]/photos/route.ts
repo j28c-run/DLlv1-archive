@@ -18,11 +18,19 @@ export async function POST(
   if (photoIds.length === 0) {
     return NextResponse.json({ error: "Falta photoId" }, { status: 400 });
   }
-  await db.collectionPhoto.createMany({
-    data: photoIds.map((pid) => ({ collectionId: id, photoId: pid })),
-    skipDuplicates: true,
-  });
-  return NextResponse.json({ ok: true, added: photoIds.length });
+  // Crear relaciones (ignorar si ya existen manualmente)
+  let added = 0;
+  for (const pid of photoIds) {
+    try {
+      await db.collectionPhoto.create({
+        data: { collectionId: id, photoId: pid },
+      });
+      added++;
+    } catch {
+      // Ya existe (P2002 unique constraint) — ignorar
+    }
+  }
+  return NextResponse.json({ ok: true, added });
 }
 
 // DELETE /api/collections/[id]/photos?photoId=xxx

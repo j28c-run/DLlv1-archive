@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/gallery/Navbar";
 import { Sidebar } from "@/components/gallery/Sidebar";
+import { PhotoActions } from "@/components/gallery/PhotoActions";
 import { SOURCE_LABELS, type PhotoDetail } from "@/lib/types";
 
 const fmtDate = (iso?: string | null) => {
@@ -214,6 +215,12 @@ export default function PhotoPage() {
                   <ExternalLink className="h-3 w-3 opacity-80" />
                 </a>
               )}
+
+              {/* Acciones: guardar, compartir, descargar */}
+              <div className="mt-4 pt-4 border-t border-border/60">
+                <div className="text-xs text-muted-foreground mb-2">Acciones</div>
+                <PhotoActions photoId={photo.id} size="md" />
+              </div>
             </div>
           </aside>
         </motion.div>

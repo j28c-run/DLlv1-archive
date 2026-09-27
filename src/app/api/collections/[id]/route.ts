@@ -12,7 +12,7 @@ export async function GET(
     where: { id },
     include: {
       photos: {
-        orderBy: { createdAt: "desc" },
+        orderBy: { addedAt: "desc" },
         include: { photo: { include: { tags: { include: { tag: true } } } } },
       },
       coverPhoto: true,
