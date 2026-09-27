@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Bookmark,
   Share2,
   Download,
   Loader2,
   Check,
-  X,
   Link2,
   Send,
   Twitter,
   Facebook,
   Plus,
   FolderOpen,
-  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +39,10 @@ type Props = {
   size?: "sm" | "md" | "lg";
   variant?: "overlay" | "default";
   className?: string;
+  /** Si ya se conoce en qué colecciones está (ej. desde el detalle), pasarlas aquí */
+  initialSavedIn?: string[];
+  /** Si ya está cargada la lista completa de colecciones, pasarlas aquí */
+  initialCollections?: Collection[];
 };
 
 export function PhotoActions({
@@ -48,10 +50,17 @@ export function PhotoActions({
   size = "sm",
   variant = "default",
   className,
+  initialSavedIn,
+  initialCollections,
 }: Props) {
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [savedIn, setSavedIn] = useState<Set<string>>(new Set());
+  const [collections, setCollections] = useState<Collection[]>(
+    initialCollections || [],
+  );
+  const [savedIn, setSavedIn] = useState<Set<string>>(
+    new Set(initialSavedIn || []),
+  );
   const [loadingCols, setLoadingCols] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -59,22 +68,29 @@ export function PhotoActions({
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
-  const initRef = useRef(false);
+  const loadedRef = useRef(false);
 
-  // Cargar colecciones del usuario y en cuáles está ya la foto
+  // Cargar colecciones + estado de guardado cuando se abre el popover (lazy)
+  // (excepto si ya vino con initialSavedIn / initialCollections)
   const loadCollections = async () => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
     setLoadingCols(true);
     try {
-      const [colsRes, photoRes] = await Promise.all([
+      const [colsRes, savedRes] = await Promise.all([
         fetch("/api/collections"),
-        fetch(`/api/photos/${photoId}`),
+        fetch(`/api/photos/${photoId}/collections`),
       ]);
       const colsData = await colsRes.json();
-      const photoData = await photoRes.json();
-      setCollections(colsData.items || []);
-      // Detectar en qué colecciones está ya (basado en los datos que pueda tener)
-      // Como no exponemos collections en /api/photos/[id], lo dejamos vacío por defecto
-      setSavedIn(new Set());
+      const savedData = await savedRes.json();
+      if (!initialCollections) {
+        setCollections(colsData.items || []);
+      }
+      if (!initialSavedIn) {
+        setSavedIn(
+          new Set((savedData.collections || []).map((c: Collection) => c.id)),
+        );
+      }
     } catch {
       // ignore
     } finally {
@@ -82,23 +98,26 @@ export function PhotoActions({
     }
   };
 
+  // Si hay datos iniciales, marcar como ya cargado
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-    loadCollections();
-  }, []);
+    if (initialCollections || initialSavedIn) {
+      loadedRef.current = true;
+    }
+  }, [initialCollections, initialSavedIn]);
 
   const toggleSave = async (colId: string) => {
     const isSaved = savedIn.has(colId);
+    // Optimistic UI
+    setSavedIn((prev) => {
+      const n = new Set(prev);
+      if (isSaved) n.delete(colId);
+      else n.add(colId);
+      return n;
+    });
     try {
       if (isSaved) {
         await fetch(`/api/collections/${colId}/photos?photoId=${photoId}`, {
           method: "DELETE",
-        });
-        setSavedIn((prev) => {
-          const n = new Set(prev);
-          n.delete(colId);
-          return n;
         });
         toast({ title: "Quitada de la colección" });
       } else {
@@ -107,10 +126,16 @@ export function PhotoActions({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ photoId }),
         });
-        setSavedIn((prev) => new Set(prev).add(colId));
         toast({ title: "Añadida a la colección" });
       }
     } catch {
+      // Revertir en error
+      setSavedIn((prev) => {
+        const n = new Set(prev);
+        if (isSaved) n.add(colId);
+        else n.delete(colId);
+        return n;
+      });
       toast({ title: "Error", description: "No se pudo actualizar", variant: "destructive" });
     }
   };
@@ -126,10 +151,8 @@ export function PhotoActions({
       });
       if (!res.ok) throw new Error("Error");
       const data = await res.json();
-      setCollections((prev) => [
-        { id: data.id, name: data.name },
-        ...prev,
-      ]);
+      const newCol = { id: data.id, name: data.name };
+      setCollections((prev) => [newCol, ...prev]);
       // Auto-añadir la foto a la nueva colección
       await fetch(`/api/collections/${data.id}/photos`, {
         method: "POST",
@@ -176,14 +199,12 @@ export function PhotoActions({
   const download = async () => {
     setDownloading(true);
     try {
-      // Usar fetch con blob para forzar descarga
       const res = await fetch(`/api/photos/${photoId}/download`);
       if (!res.ok) throw new Error("Error al descargar");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      // Obtener filename del header
       const cd = res.headers.get("content-disposition") || "";
       const m = cd.match(/filename="([^"]+)"/);
       a.download = m?.[1] || `douhal-${photoId}.jpg`;
@@ -211,26 +232,53 @@ export function PhotoActions({
 
   const iconClass = size === "sm" ? "h-3 w-3" : size === "lg" ? "h-4 w-4" : "h-3.5 w-3.5";
 
+  const savedCount = savedIn.size;
+
   return (
     <>
       <div className={cn("flex items-center gap-1", className)}>
         {/* Guardar en colección */}
-        <Popover>
+        <Popover
+          open={saveOpen}
+          onOpenChange={(open) => {
+            setSaveOpen(open);
+            if (open) loadCollections();
+          }}
+        >
           <PopoverTrigger asChild>
             <Button
               size="icon"
               variant="secondary"
-              className={btnClass}
-              title="Guardar en colección"
+              className={cn(
+                btnClass,
+                savedCount > 0 &&
+                  variant === "overlay" &&
+                  "bg-amber-500/90 hover:bg-amber-500 border-amber-400 text-amber-950",
+                savedCount > 0 &&
+                  variant !== "overlay" &&
+                  "bg-amber-500/85 hover:bg-amber-500 border-amber-400 text-amber-950",
+              )}
+              title={
+                savedCount > 0
+                  ? `Guardada en ${savedCount} colección(es)`
+                  : "Guardar en colección"
+              }
               aria-label="Guardar en colección"
             >
               <Bookmark className={iconClass} />
+              {savedCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-amber-500 text-amber-950 text-[9px] font-bold flex items-center justify-center">
+                  {savedCount}
+                </span>
+              )}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-64 p-2" align="end">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">
-                Guardar en…
+                {savedCount > 0
+                  ? `Guardada en ${savedCount} colección(es)`
+                  : "Guardar en…"}
               </span>
               <Button
                 variant="ghost"
@@ -266,9 +314,14 @@ export function PhotoActions({
                         saved && "bg-amber-500/15 text-amber-200",
                       )}
                     >
-                      <FolderOpen className="h-3.5 w-3.5 text-amber-300/80" />
+                      <FolderOpen className="h-3.5 w-3.5 text-amber-300/80 shrink-0" />
                       <span className="flex-1 truncate">{c.name}</span>
-                      {saved && <Check className="h-3 w-3 text-emerald-400" />}
+                      {saved && (
+                        <span className="flex items-center gap-0.5 text-emerald-400 shrink-0">
+                          <Check className="h-3 w-3" />
+                          Guardada
+                        </span>
+                      )}
                     </button>
                   );
                 })
@@ -407,7 +460,3 @@ function ShareItem({
     </button>
   );
 }
-
-// Suppress unused
-export const _X = X;
-export const _Copy = Copy;

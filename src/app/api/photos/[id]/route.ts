@@ -10,7 +10,10 @@ export async function GET(
   const { id } = await params
   const photo = await db.photo.findUnique({
     where: { id },
-    include: { tags: { include: { tag: true } } },
+    include: {
+      tags: { include: { tag: true } },
+      inCollections: { include: { collection: true } },
+    },
   })
   if (!photo) {
     return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
@@ -49,6 +52,10 @@ export async function GET(
     views: photo.views + 1,  // reflejamos el incremento local
     pinned: photo.pinned,
     tags: photo.tags.map((t) => t.tag.name),
+    collections: photo.inCollections.map((c) => ({
+      id: c.collection.id,
+      name: c.collection.name,
+    })),
     related: related.map((r) => ({
       id: r.id,
       src: r.src,

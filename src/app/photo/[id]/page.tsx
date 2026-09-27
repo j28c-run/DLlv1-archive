@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Heart,
   Loader2,
+  FolderOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -219,8 +220,33 @@ export default function PhotoPage() {
               {/* Acciones: guardar, compartir, descargar */}
               <div className="mt-4 pt-4 border-t border-border/60">
                 <div className="text-xs text-muted-foreground mb-2">Acciones</div>
-                <PhotoActions photoId={photo.id} size="md" />
+                <PhotoActions
+                  photoId={photo.id}
+                  size="md"
+                  initialSavedIn={(photo.collections || []).map((c) => c.id)}
+                />
               </div>
+
+              {/* Colecciones donde está guardada */}
+              {photo.collections && photo.collections.length > 0 && (
+                <div className="mt-3">
+                  <div className="text-xs text-muted-foreground mb-1.5">
+                    Guardada en {photo.collections.length} colección(es):
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {photo.collections.map((c) => (
+                      <Link
+                        key={c.id}
+                        href={`/collections/${c.id}`}
+                        className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-200 px-2 py-0.5 text-[11px] hover:bg-amber-500/25 transition-colors"
+                      >
+                        <FolderOpen className="h-3 w-3" />
+                        {c.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </aside>
         </motion.div>

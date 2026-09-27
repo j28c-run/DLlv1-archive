@@ -14,6 +14,7 @@ export type Photo = {
   views: number;
   pinned: boolean;
   tags: string[];
+  collections?: Array<{ id: string; name: string }>;
 };
 
 export type PhotoDetail = Photo & {
